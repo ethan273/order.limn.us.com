@@ -657,24 +657,30 @@
         
         // Load collections on page load
         async function loadCollections() {
-            console.log('Loading collections...');
-            const data = await fetchData('collections?active=eq.true&order=collection_name');
-            
-            const select = document.getElementById('collection');
-            if (!data || data.length === 0) {
-                select.innerHTML = '<option value="">No collections available</option>';
-                return;
-            }
-            
-            select.innerHTML = '<option value="">Select Collection</option>';
-            data.forEach(collection => {
-                const option = document.createElement('option');
-                option.value = collection.collection_name;
-                option.textContent = collection.collection_name;
-                select.appendChild(option);
-            });
-            console.log(`Loaded ${data.length} collections`);
-        }
+    console.log('🔵 Starting loadCollections...');
+    const data = await fetchData('collections?active=eq.true&order=collection_name');
+    console.log('🔵 fetchData returned:', data);
+    
+    const select = document.getElementById('collection');
+    console.log('🔵 Found select element:', select);
+    
+    if (!data || data.length === 0) {
+        console.log('🔴 No data returned');
+        select.innerHTML = '<option value="">No collections available</option>';
+        return;
+    }
+    
+    console.log('🔵 Processing', data.length, 'collections');
+    select.innerHTML = '<option value="">Select Collection</option>';
+    data.forEach((collection, index) => {
+        console.log(`🔵 Adding collection ${index}:`, collection.collection_name);
+        const option = document.createElement('option');
+        option.value = collection.collection_name;
+        option.textContent = collection.collection_name;
+        select.appendChild(option);
+    });
+    console.log('🔵 Collections loaded successfully');
+}
         
         // Load items for selected collection
         async function loadItems() {
