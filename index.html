@@ -1172,19 +1172,6 @@ async function submitOrder() {
                         }
                     });
                     
-                    const mutation = `
-                        mutation {
-                            create_item(
-                                board_id: ${BOARD_ID},
-                                item_name: "${item.custom_sku}",
-                                column_values: ${JSON.stringify(JSON.stringify(columnValues))}
-                            ) {
-                                id
-                            }
-                        }
-                    `;
-                    
-                    
                 
                 alert(`Order submitted successfully! ${orderItems.length} SKUs created in Monday.com.`);
                 orderItems = [];
