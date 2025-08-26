@@ -1156,24 +1156,21 @@ async function submitOrder() {
             });
             
             if (!response.ok) {
-                throw new Error(`Webhook failed: ${response.status}`);
-            }
+            throw new Error(`Webhook failed: ${response.status}`);
         }
-        
-
+    }
+    
+    alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
+    orderItems = [];
+    updateOrderItemsList();
+    resetForm();
+    
+} catch (error) {
+    console.error('Error submitting order:', error);
+    alert('Error submitting order. Please check console for details.');
 }
-                    
-                
-alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
-                orderItems = [];
-                updateOrderItemsList();
-                resetForm();
-                
-            } catch (error) {
-                console.error('Error submitting order:', error);
-                alert('Error submitting order. Please check console for details.');
-            }
-        }
+}
+
         
         // Load stone options
         async function loadStoneOptions() {
