@@ -1160,26 +1160,11 @@ async function submitOrder() {
             }
         }
         
-        alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
-        orderItems = [];
-        updateOrderItemsList();
-        resetForm();
-        
-    } catch (error) {
-        console.error('Error submitting order:', error);
-        alert('Error submitting order. Please check console for details.');
-    }
+
 }
                     
-                    // Remove empty strings
-                    Object.keys(columnValues).forEach(key => {
-                        if (columnValues[key] === "") {
-                            delete columnValues[key];
-                        }
-                    });
-                    
                 
-                alert(`Order submitted successfully! ${orderItems.length} SKUs created in Monday.com.`);
+alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
                 orderItems = [];
                 updateOrderItemsList();
                 resetForm();
