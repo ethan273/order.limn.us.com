@@ -51,11 +51,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .order-info-item {
             display: flex;
             flex-direction: column;
+            margin-right: 30px;
         }
 
         .order-info-item label {
@@ -81,6 +83,8 @@
         .left-panel {
             padding: 30px;
             border-right: 2px solid #e0e0e0;
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
         }
 
         .right-panel {
@@ -88,61 +92,52 @@
             padding: 30px;
         }
 
-        .tabs {
+        .section {
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-header {
             display: flex;
-            background: #f5f5f5;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            overflow-x: auto;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .tab {
-            padding: 12px 20px;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: #666;
-            transition: all 0.3s;
-            white-space: nowrap;
-            position: relative;
-            border-radius: 8px;
-        }
-
-        .tab:hover {
-            background: rgba(103, 126, 234, 0.1);
-        }
-
-        .tab.active {
-            color: white;
+        .section-number {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 15px;
         }
 
-        .tab:disabled {
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .section.disabled {
             opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            pointer-events: none;
         }
 
         .form-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .form-group {
@@ -176,6 +171,13 @@
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input:disabled,
+        .form-group select:disabled,
+        .form-group textarea:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
         }
 
         .form-group textarea {
@@ -325,6 +327,12 @@
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
         }
 
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: #f5f5f5;
             color: #666;
@@ -358,15 +366,39 @@
             opacity: 0.3;
         }
 
-        .debug {
+        .required-indicator {
+            color: #ff5252;
+            margin-left: 2px;
+        }
+
+        .optional-badge {
+            display: inline-block;
             background: #f0f0f0;
-            padding: 10px;
-            margin: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
+            color: #666;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+
+        /* Custom scrollbar for left panel */
+        .left-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .left-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
@@ -402,38 +434,31 @@
 
         <div class="main-content">
             <div class="left-panel">
-                <div class="tabs">
-                    <button class="tab active" onclick="switchTab('basic-info')">Item Details</button>
-                    <button class="tab" onclick="switchTab('fabric')" disabled>Fabric</button>
-                    <button class="tab" onclick="switchTab('wood')" disabled>Wood</button>
-                    <button class="tab" onclick="switchTab('metal')" disabled>Metal</button>
-                    <button class="tab" onclick="switchTab('stone')" disabled>Stone</button>
-                    <button class="tab" onclick="switchTab('weave')" disabled>Weave</button>
-                    <button class="tab" onclick="switchTab('carving')" disabled>Carving</button>
-                    <button class="tab" onclick="switchTab('additional')" disabled>Additional</button>
-                </div>
-
-                <div id="basic-info" class="tab-content active">
-                    <h3>Select Item</h3>
+                <!-- Section 1: Item Selection -->
+                <div class="section" id="item-section">
+                    <div class="section-header">
+                        <div class="section-number">1</div>
+                        <div class="section-title">Select Item</div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="collection">Collection *</label>
+                            <label for="collection">Collection <span class="required-indicator">*</span></label>
                             <select id="collection" required onchange="loadItems()">
                                 <option value="">Loading collections...</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="item">Item *</label>
+                            <label for="item">Item <span class="required-indicator">*</span></label>
                             <select id="item" required disabled onchange="onItemSelected()">
                                 <option value="">Select Item</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="price">Price *</label>
+                            <label for="price">Price <span class="required-indicator">*</span></label>
                             <input type="number" id="price" min="0" step="0.01" placeholder="Enter price" required onchange="updateItemPrice()">
                         </div>
                         <div class="form-group">
-                            <label for="quantity">Quantity *</label>
+                            <label for="quantity">Quantity <span class="required-indicator">*</span></label>
                             <input type="number" id="quantity" min="1" value="1" required onchange="updateItemPrice()">
                         </div>
                         <div class="form-group">
@@ -450,23 +475,22 @@
                         <div class="value" id="item-price">$0.00</div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="notes">Item Notes</label>
-                        <textarea id="notes" placeholder="Special instructions for this item..."></textarea>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button class="btn btn-primary" onclick="validateBasicInfo()">Continue to Materials</button>
-                    </div>
+                    <button class="btn btn-primary" onclick="validateAndEnableMaterials()" id="enable-materials-btn">
+                        Continue to Material Selection
+                    </button>
                 </div>
 
-                <div id="fabric" class="tab-content">
-                    <h3>Select Fabric</h3>
+                <!-- Section 2: Fabric Selection -->
+                <div class="section disabled" id="fabric-section">
+                    <div class="section-header">
+                        <div class="section-number">2</div>
+                        <div class="section-title">Fabric Selection <span class="optional-badge">Optional</span></div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="fabric-brand">Fabric Brand</label>
-                            <select id="fabric-brand" onchange="loadFabricCollections()">
-                                <option value="">Select Brand</option>
+                            <select id="fabric-brand" onchange="loadFabricCollections()" disabled>
+                                <option value="">None / Select Brand</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -482,115 +506,104 @@
                             </select>
                         </div>
                     </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('basic-info')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('wood')">Continue</button>
-                    </div>
                 </div>
 
-                <div id="wood" class="tab-content">
-                    <h3>Select Wood</h3>
+                <!-- Section 3: Wood Selection -->
+                <div class="section disabled" id="wood-section">
+                    <div class="section-header">
+                        <div class="section-number">3</div>
+                        <div class="section-title">Wood Selection <span class="optional-badge">Optional</span></div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="wood-type">Wood Type</label>
-                            <select id="wood-type" onchange="loadWoodFinishes()">
-                                <option value="">Select Wood</option>
+                            <select id="wood-type" onchange="loadWoodFinishes()" disabled>
+                                <option value="">None / Select Wood</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="wood-finish">Wood Finish</label>
-                            <select id="wood-finish">
+                            <select id="wood-finish" disabled>
                                 <option value="">Select Finish</option>
                             </select>
                         </div>
                     </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('fabric')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('metal')">Continue</button>
-                    </div>
                 </div>
 
-                <div id="metal" class="tab-content">
-                    <h3>Select Metal</h3>
+                <!-- Section 4: Metal Selection -->
+                <div class="section disabled" id="metal-section">
+                    <div class="section-header">
+                        <div class="section-number">4</div>
+                        <div class="section-title">Metal Selection <span class="optional-badge">Optional</span></div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="metal-type">Metal Type</label>
-                            <select id="metal-type" onchange="loadMetalFinishes()">
-                                <option value="">None</option>
+                            <select id="metal-type" onchange="loadMetalFinishes()" disabled>
+                                <option value="">None / Select Metal</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="metal-finish">Metal Finish</label>
-                            <select id="metal-finish">
+                            <select id="metal-finish" disabled>
                                 <option value="">Select Finish</option>
                             </select>
                         </div>
                     </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('wood')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('stone')">Continue</button>
-                    </div>
                 </div>
 
-                <div id="stone" class="tab-content">
-                    <h3>Select Stone</h3>
+                <!-- Section 5: Additional Materials -->
+                <div class="section disabled" id="additional-section">
+                    <div class="section-header">
+                        <div class="section-number">5</div>
+                        <div class="section-title">Additional Materials <span class="optional-badge">Optional</span></div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="stone-type">Stone Type</label>
-                            <select id="stone-type">
+                            <select id="stone-type" disabled>
                                 <option value="">None</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('metal')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('weave')">Continue</button>
-                    </div>
-                </div>
-
-                <div id="weave" class="tab-content">
-                    <h3>Select Weaving</h3>
-                    <div class="form-grid">
                         <div class="form-group">
                             <label for="weave-material">Weaving Material</label>
-                            <select id="weave-material">
+                            <select id="weave-material" disabled>
                                 <option value="">None</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('stone')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('carving')">Continue</button>
-                    </div>
-                </div>
-
-                <div id="carving" class="tab-content">
-                    <h3>Select Carving</h3>
-                    <div class="form-grid">
                         <div class="form-group">
                             <label for="carving-style">Carving Style</label>
-                            <select id="carving-style">
+                            <select id="carving-style" disabled>
                                 <option value="">None</option>
                             </select>
                         </div>
                     </div>
-                    <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('weave')">Back</button>
-                        <button class="btn btn-primary" onclick="switchTab('additional')">Continue</button>
-                    </div>
                 </div>
 
-                <div id="additional" class="tab-content">
-                    <h3>Additional Specifications</h3>
-                    <div class="form-group">
-                        <label for="additional-specs">Additional Options</label>
-                        <select id="additional-specs">
-                            <option value="">None</option>
-                        </select>
+                <!-- Section 6: Notes and Final Details -->
+                <div class="section disabled" id="notes-section">
+                    <div class="section-header">
+                        <div class="section-number">6</div>
+                        <div class="section-title">Additional Specifications</div>
                     </div>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label for="additional-specs">Additional Options</label>
+                            <select id="additional-specs" disabled>
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Item Notes</label>
+                        <textarea id="notes" placeholder="Special instructions for this item..." disabled></textarea>
+                    </div>
+                    
                     <div class="button-group">
-                        <button class="btn btn-secondary" onclick="switchTab('carving')">Back</button>
-                        <button class="btn btn-primary" onclick="addItemToOrder()">Add Item to Order</button>
+                        <button class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+                        <button class="btn btn-primary" onclick="addItemToOrder()" id="add-item-btn" disabled>
+                            Add Item to Order
+                        </button>
                     </div>
                 </div>
             </div>
@@ -620,8 +633,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="debug" id="debug" style="display:none;"></div>
     </div>
 
     <script>
@@ -633,6 +644,7 @@
         let orderItems = [];
         let currentItem = {};
         let itemsData = {};
+        let materialsEnabled = false;
         
         // Utility function for API calls
         async function fetchData(endpoint) {
@@ -742,11 +754,70 @@
             }
         }
         
+        // Validate and enable materials
+        function validateAndEnableMaterials() {
+            const collection = document.getElementById('collection').value;
+            const item = document.getElementById('item').value;
+            const price = document.getElementById('price').value;
+            const quantity = document.getElementById('quantity').value;
+            
+            if (!collection || !item || !price || !quantity) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Save to current item
+            currentItem = {
+                collection: collection,
+                item: itemsData[item]?.name || '',
+                baseSku: item,
+                basePrice: parseFloat(price),
+                quantity: parseInt(quantity),
+                rush: document.getElementById('rush').value === 'yes',
+                notes: document.getElementById('notes').value,
+                fabric: { brand: '', collection: '', color: '' },
+                wood: { type: '', finish: '' },
+                metal: { type: '', finish: '' },
+                stone: { type: '' },
+                weave: { material: '' },
+                carving: { style: '' },
+                additionalSpecs: ''
+            };
+            
+            // Enable material sections
+            enableMaterialSections();
+            
+            // Hide the continue button and scroll to fabric section
+            document.getElementById('enable-materials-btn').style.display = 'none';
+            document.getElementById('fabric-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Enable all material sections
+        function enableMaterialSections() {
+            materialsEnabled = true;
+            
+            // Enable all sections
+            document.querySelectorAll('.section.disabled').forEach(section => {
+                section.classList.remove('disabled');
+            });
+            
+            // Enable all form inputs in material sections
+            document.getElementById('fabric-brand').disabled = false;
+            document.getElementById('wood-type').disabled = false;
+            document.getElementById('metal-type').disabled = false;
+            document.getElementById('stone-type').disabled = false;
+            document.getElementById('weave-material').disabled = false;
+            document.getElementById('carving-style').disabled = false;
+            document.getElementById('additional-specs').disabled = false;
+            document.getElementById('notes').disabled = false;
+            document.getElementById('add-item-btn').disabled = false;
+        }
+        
         // Load fabric brands
         async function loadFabricBrands() {
             const data = await fetchData('fabric_brands?active=eq.true&order=brand_name');
             const select = document.getElementById('fabric-brand');
-            select.innerHTML = '<option value="">Select Brand</option>';
+            select.innerHTML = '<option value="">None / Select Brand</option>';
             
             if (data && data.length > 0) {
                 data.forEach(brand => {
@@ -816,7 +887,7 @@
         async function loadWoodOptions() {
             const data = await fetchData('woods?active=eq.true&order=wood_name');
             const select = document.getElementById('wood-type');
-            select.innerHTML = '<option value="">Select Wood</option>';
+            select.innerHTML = '<option value="">None / Select Wood</option>';
             
             if (data && data.length > 0) {
                 data.forEach(wood => {
@@ -829,7 +900,7 @@
             }
         }
         
-        // Load wood finishes for selected wood - FIXED
+        // Load wood finishes for selected wood
         function loadWoodFinishes() {
             const select = document.getElementById('wood-type');
             const finishSelect = document.getElementById('wood-finish');
@@ -847,7 +918,12 @@
                             finishSelect.appendChild(option);
                         }
                     });
+                    finishSelect.disabled = false;
+                } else {
+                    finishSelect.disabled = true;
                 }
+            } else {
+                finishSelect.disabled = true;
             }
         }
         
@@ -855,7 +931,7 @@
         async function loadMetalOptions() {
             const data = await fetchData('metals?active=eq.true&order=metal_name');
             const select = document.getElementById('metal-type');
-            select.innerHTML = '<option value="">None</option>';
+            select.innerHTML = '<option value="">None / Select Metal</option>';
             
             if (data && data.length > 0) {
                 data.forEach(metal => {
@@ -868,7 +944,7 @@
             }
         }
         
-        // Load metal finishes for selected metal - FIXED
+        // Load metal finishes for selected metal
         function loadMetalFinishes() {
             const select = document.getElementById('metal-type');
             const finishSelect = document.getElementById('metal-finish');
@@ -886,68 +962,16 @@
                             finishSelect.appendChild(option);
                         }
                     });
+                    finishSelect.disabled = false;
+                } else {
+                    finishSelect.disabled = true;
                 }
+            } else {
+                finishSelect.disabled = true;
             }
         }
         
-        // Validate basic info
-        function validateBasicInfo() {
-            const collection = document.getElementById('collection').value;
-            const item = document.getElementById('item').value;
-            const price = document.getElementById('price').value;
-            const quantity = document.getElementById('quantity').value;
-            
-            if (!collection || !item || !price || !quantity) {
-                alert('Please fill in all required fields');
-                return;
-            }
-            
-            // Save to current item
-            currentItem = {
-                collection: collection,
-                item: itemsData[item]?.name || '',
-                baseSku: item,
-                basePrice: parseFloat(price),
-                quantity: parseInt(quantity),
-                rush: document.getElementById('rush').value === 'yes',
-                notes: document.getElementById('notes').value,
-                fabric: { brand: '', collection: '', color: '' },
-                wood: { type: '', finish: '' },
-                metal: { type: '', finish: '' },
-                stone: { type: '' },
-                weave: { material: '' },
-                carving: { style: '' },
-                additionalSpecs: ''
-            };
-            
-            // Enable material tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.disabled = false;
-            });
-            
-            switchTab('fabric');
-        }
-        
-        // Switch tabs
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.getElementById(tabName).classList.add('active');
-            
-            document.querySelectorAll('.tab').forEach(tab => {
-                if (tab.textContent.toLowerCase().includes(tabName.replace('-', ' '))) {
-                    tab.classList.add('active');
-                }
-            });
-        }
-        
-        // Generate SKU - Updated for Monday board fields
+        // Generate SKU
         function generateSKU(item) {
             const result = {
                 base_sku: item.baseSku,
@@ -991,6 +1015,12 @@
 
         // Add item to order
         function addItemToOrder() {
+            // Make sure we have the basic item info
+            if (!currentItem.baseSku) {
+                alert('Please complete item selection first');
+                return;
+            }
+            
             // Collect material selections
             currentItem.fabric.brand = document.getElementById('fabric-brand').value;
             const collectionSelect = document.getElementById('fabric-collection');
@@ -1008,6 +1038,7 @@
             currentItem.weave.material = document.getElementById('weave-material').value;
             currentItem.carving.style = document.getElementById('carving-style').value;
             currentItem.additionalSpecs = document.getElementById('additional-specs').value;
+            currentItem.notes = document.getElementById('notes').value;
             
             // Generate SKU
             const skuData = generateSKU(currentItem);
@@ -1094,6 +1125,7 @@
 
         // Reset form
         function resetForm() {
+            // Reset item selection
             document.getElementById('collection').value = '';
             document.getElementById('item').value = '';
             document.getElementById('item').disabled = true;
@@ -1112,30 +1144,47 @@
             
             document.getElementById('wood-type').value = '';
             document.getElementById('wood-finish').value = '';
+            document.getElementById('wood-finish').disabled = true;
             
             document.getElementById('metal-type').value = '';
             document.getElementById('metal-finish').value = '';
+            document.getElementById('metal-finish').disabled = true;
             
             document.getElementById('stone-type').value = '';
             document.getElementById('weave-material').value = '';
             document.getElementById('carving-style').value = '';
             document.getElementById('additional-specs').value = '';
             
-            // Disable material tabs
-            document.querySelectorAll('.tab').forEach(tab => {
-                if (!tab.textContent.includes('Item Details')) {
-                    tab.disabled = true;
+            // Disable material sections again
+            document.querySelectorAll('.section').forEach((section, index) => {
+                if (index > 0) { // Skip the first section (item selection)
+                    section.classList.add('disabled');
                 }
             });
             
-            // Switch back to basic info
-            switchTab('basic-info');
+            // Re-disable material inputs
+            document.getElementById('fabric-brand').disabled = true;
+            document.getElementById('wood-type').disabled = true;
+            document.getElementById('metal-type').disabled = true;
+            document.getElementById('stone-type').disabled = true;
+            document.getElementById('weave-material').disabled = true;
+            document.getElementById('carving-style').disabled = true;
+            document.getElementById('additional-specs').disabled = true;
+            document.getElementById('notes').disabled = true;
+            document.getElementById('add-item-btn').disabled = true;
             
-            // Reset currentItem
+            // Show the continue button again
+            document.getElementById('enable-materials-btn').style.display = 'block';
+            
+            // Reset current item
             currentItem = {};
+            materialsEnabled = false;
+            
+            // Scroll back to top
+            document.getElementById('item-section').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Submit order - UPDATED for correct Monday field structure
+        // Submit order
         async function submitOrder() {
             if (orderItems.length === 0) {
                 alert('Please add at least one item to the order');
