@@ -384,11 +384,11 @@
             </div>
             <div class="order-info-item">
                 <label>Client</label>
-                <span id="client-name">Loading...</span>
+                <span id="client-name">Test Client</span>
             </div>
             <div class="order-info-item">
                 <label>Project</label>
-                <span id="project-name">Loading...</span>
+                <span id="project-name">Test Project</span>
             </div>
             <div class="order-info-item">
                 <label>Created Date</label>
@@ -424,7 +424,7 @@
                         </div>
                         <div class="form-group">
                             <label for="item">Item *</label>
-                            <select id="item" required disabled onchange="updateItemPrice()">
+                            <select id="item" required disabled onchange="onItemSelected()">
                                 <option value="">Select Item</option>
                             </select>
                         </div>
@@ -625,7 +625,7 @@
     </div>
 
     <script>
-// Configuration
+        // Configuration
         const API_URL = 'https://rwfgdtwbzkglfljyvgbt.supabase.co/rest/v1';
         const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3ZmdkdHdiemtnbGZsanl2Z2J0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMDIwNjMsImV4cCI6MjA3MTU3ODA2M30.C3HRKtnQ_ivS7md7hJoOyusegbkusRCdhe5UonremY0';
         
@@ -657,32 +657,27 @@
         
         // Load collections on page load
         async function loadCollections() {
-    console.log('🔵 Starting loadCollections...');
-    const data = await fetchData('collections?active=eq.true&order=collection_name');
-    console.log('🔵 fetchData returned:', data);
-    
-    const select = document.getElementById('collection');
-    console.log('🔵 Found select element:', select);
-    
-    if (!data || data.length === 0) {
-        console.log('🔴 No data returned');
-        select.innerHTML = '<option value="">No collections available</option>';
-        return;
-    }
-    
-    console.log('🔵 Processing', data.length, 'collections');
-    select.innerHTML = '<option value="">Select Collection</option>';
-    data.forEach((collection, index) => {
-        console.log(`🔵 Adding collection ${index}:`, collection.collection_name);
-        const option = document.createElement('option');
-        option.value = collection.collection_name;
-        option.textContent = collection.collection_name;
-        select.appendChild(option);
-    });
-    console.log('🔵 Collections loaded successfully');
-}
+            console.log('Loading collections...');
+            const data = await fetchData('collections?active=eq.true&order=collection_name');
+            
+            const select = document.getElementById('collection');
+            
+            if (!data || data.length === 0) {
+                select.innerHTML = '<option value="">No collections available</option>';
+                return;
+            }
+            
+            select.innerHTML = '<option value="">Select Collection</option>';
+            data.forEach((collection) => {
+                const option = document.createElement('option');
+                option.value = collection.collection_name;
+                option.textContent = collection.collection_name;
+                select.appendChild(option);
+            });
+            console.log('Collections loaded successfully');
+        }
         
-        // Load items for selected collection
+        // Load items for selected collection with pricing
         async function loadItems() {
             const collection = document.getElementById('collection').value;
             const itemSelect = document.getElementById('item');
@@ -693,22 +688,38 @@
                 return;
             }
             
-            const data = await fetchData(`items?collection_name=eq.${encodeURIComponent(collection)}&active=eq.true&order=item_name`);
+            // Updated query to get base_price and lead_time_days
+            const data = await fetchData(`items?collection_name=eq.${encodeURIComponent(collection)}&active=eq.true&select=item_id,item_name,base_sku,base_price,estimated_lead_time_days&order=item_name`);
             
             itemSelect.innerHTML = '<option value="">Select Item</option>';
             if (data && data.length > 0) {
                 data.forEach(item => {
                     itemsData[item.base_sku] = {
-                        name: item.item_name
+                        name: item.item_name,
+                        basePrice: item.base_price,
+                        leadTime: item.estimated_lead_time_days || 30
                     };
                     const option = document.createElement('option');
                     option.value = item.base_sku;
-                    option.textContent = item.item_name;
+                    option.textContent = item.base_price ? 
+                        `${item.item_name} ($${parseFloat(item.base_price).toFixed(2)})` : 
+                        item.item_name;
                     itemSelect.appendChild(option);
                 });
                 itemSelect.disabled = false;
             } else {
                 itemSelect.innerHTML = '<option value="">No items available</option>';
+            }
+        }
+        
+        // Auto-populate price when item selected
+        function onItemSelected() {
+            const baseSku = document.getElementById('item').value;
+            const priceInput = document.getElementById('price');
+            
+            if (baseSku && itemsData[baseSku] && itemsData[baseSku].basePrice) {
+                priceInput.value = itemsData[baseSku].basePrice;
+                updateItemPrice();
             }
         }
         
@@ -769,6 +780,7 @@
                     const option = document.createElement('option');
                     option.value = collection.collection_id;
                     option.textContent = collection.collection_name;
+                    option.dataset.collectionName = collection.collection_name;
                     collectionSelect.appendChild(option);
                 });
                 collectionSelect.disabled = false;
@@ -817,7 +829,7 @@
             }
         }
         
-        // Load wood finishes for selected wood
+        // Load wood finishes for selected wood - FIXED
         function loadWoodFinishes() {
             const select = document.getElementById('wood-type');
             const finishSelect = document.getElementById('wood-finish');
@@ -825,15 +837,17 @@
             
             if (select.value) {
                 const selectedOption = select.options[select.selectedIndex];
-                const finishes = selectedOption.dataset.finishes.split(',');
-                finishes.forEach(finish => {
-                    if (finish.trim()) {
-                        const option = document.createElement('option');
-                        option.value = finish.trim();
-                        option.textContent = finish.trim();
-                        finishSelect.appendChild(option);
-                    }
-                });
+                const finishes = selectedOption.dataset.finishes;
+                if (finishes) {
+                    finishes.split(',').forEach(finish => {
+                        if (finish.trim()) {
+                            const option = document.createElement('option');
+                            option.value = finish.trim();
+                            option.textContent = finish.trim();
+                            finishSelect.appendChild(option);
+                        }
+                    });
+                }
             }
         }
         
@@ -854,7 +868,7 @@
             }
         }
         
-        // Load metal finishes for selected metal
+        // Load metal finishes for selected metal - FIXED
         function loadMetalFinishes() {
             const select = document.getElementById('metal-type');
             const finishSelect = document.getElementById('metal-finish');
@@ -862,15 +876,17 @@
             
             if (select.value) {
                 const selectedOption = select.options[select.selectedIndex];
-                const finishes = selectedOption.dataset.finishes.split(',');
-                finishes.forEach(finish => {
-                    if (finish.trim()) {
-                        const option = document.createElement('option');
-                        option.value = finish.trim();
-                        option.textContent = finish.trim();
-                        finishSelect.appendChild(option);
-                    }
-                });
+                const finishes = selectedOption.dataset.finishes;
+                if (finishes) {
+                    finishes.split(',').forEach(finish => {
+                        if (finish.trim()) {
+                            const option = document.createElement('option');
+                            option.value = finish.trim();
+                            option.textContent = finish.trim();
+                            finishSelect.appendChild(option);
+                        }
+                    });
+                }
             }
         }
         
@@ -897,7 +913,11 @@
                 notes: document.getElementById('notes').value,
                 fabric: { brand: '', collection: '', color: '' },
                 wood: { type: '', finish: '' },
-                metal: { type: '', finish: '' }
+                metal: { type: '', finish: '' },
+                stone: { type: '' },
+                weave: { material: '' },
+                carving: { style: '' },
+                additionalSpecs: ''
             };
             
             // Enable material tabs
@@ -927,7 +947,7 @@
             });
         }
         
-        // Generate SKU (3-field system)
+        // Generate SKU - Updated for Monday board fields
         function generateSKU(item) {
             const result = {
                 base_sku: item.baseSku,
@@ -935,7 +955,7 @@
                 sku_id: ''
             };
             
-            // Build custom_sku (clean, readable code)
+            // Build custom_sku
             const customParts = [item.baseSku];
             
             if (item.fabric.brand && item.fabric.color) {
@@ -973,7 +993,9 @@
         function addItemToOrder() {
             // Collect material selections
             currentItem.fabric.brand = document.getElementById('fabric-brand').value;
-            currentItem.fabric.collection = document.getElementById('fabric-collection').options[document.getElementById('fabric-collection').selectedIndex]?.text || '';
+            const collectionSelect = document.getElementById('fabric-collection');
+            currentItem.fabric.collection = collectionSelect.options[collectionSelect.selectedIndex]?.dataset?.collectionName || 
+                                           collectionSelect.options[collectionSelect.selectedIndex]?.text || '';
             currentItem.fabric.color = document.getElementById('fabric-color').value;
             
             currentItem.wood.type = document.getElementById('wood-type').value;
@@ -982,7 +1004,12 @@
             currentItem.metal.type = document.getElementById('metal-type').value;
             currentItem.metal.finish = document.getElementById('metal-finish').value;
             
-            // Generate SKU (3-field system)
+            currentItem.stone.type = document.getElementById('stone-type').value;
+            currentItem.weave.material = document.getElementById('weave-material').value;
+            currentItem.carving.style = document.getElementById('carving-style').value;
+            currentItem.additionalSpecs = document.getElementById('additional-specs').value;
+            
+            // Generate SKU
             const skuData = generateSKU(currentItem);
             
             // Calculate price
@@ -991,7 +1018,7 @@
                 itemPrice *= 1.25;
             }
             
-            // Add to order items with all 3 SKU fields
+            // Add to order items with all fields
             orderItems.push({
                 ...currentItem,
                 base_sku: skuData.base_sku,
@@ -1065,112 +1092,131 @@
             }
         }
 
-// Reset form
-function resetForm() {
-    document.getElementById('collection').value = '';
-    document.getElementById('item').value = '';
-    document.getElementById('item').disabled = true;
-    document.getElementById('price').value = '';
-    document.getElementById('quantity').value = '1';
-    document.getElementById('rush').value = 'no';
-    document.getElementById('notes').value = '';
-    document.getElementById('item-price').textContent = '$0.00';
-    
-    // Reset material selections
-    document.getElementById('fabric-brand').value = '';
-    document.getElementById('fabric-collection').value = '';
-    document.getElementById('fabric-collection').disabled = true;
-    document.getElementById('fabric-color').value = '';
-    document.getElementById('fabric-color').disabled = true;
-    
-    document.getElementById('wood-type').value = '';
-    document.getElementById('wood-finish').value = '';
-    
-    document.getElementById('metal-type').value = '';
-    document.getElementById('metal-finish').value = '';
-    
-    // Reset additional material selections
-    document.getElementById('stone-type').value = '';
-    document.getElementById('weave-material').value = '';
-    document.getElementById('carving-style').value = '';
-    document.getElementById('additional-specs').value = '';
-    
-    // Disable material tabs
-    document.querySelectorAll('.tab').forEach(tab => {
-        if (!tab.textContent.includes('Item Details')) {
-            tab.disabled = true;
-        }
-    });
-    
-    // Switch back to basic info
-    switchTab('basic-info');
-    
-    // Reset currentItem
-    currentItem = {};
-}
-
-        // Submit order
-async function submitOrder() {
-    if (orderItems.length === 0) {
-        alert('Please add at least one item to the order');
-        return;
-    }
-    
-    if (!confirm(`Submit ${orderItems.length} items for production?`)) {
-        return;
-    }
-    
-    // Make.com webhook URL - REPLACE WITH YOUR ACTUAL WEBHOOK URL
-    const WEBHOOK_URL = 'https://hook.us2.make.com/ue47c6ub3xk6b2hrpfejncrccjuetxuh';
-    
-    try {
-        // Send each item to webhook
-        for (const item of orderItems) {
-            const webhookData = {
-                custom_sku: item.custom_sku,
-                base_sku: item.base_sku,
-                sku_id: item.sku_id,
-                collection: item.collection,
-                item_name: item.item,
-                fabric_brand: item.fabric.brand || "",
-                fabric_collection: item.fabric.collection || "",
-                fabric_color: item.fabric.color || "",
-                wood: item.wood.type ? `${item.wood.type}${item.wood.finish ? ' ' + item.wood.finish : ''}` : "",
-                metal: item.metal.type || "",
-                status: "Pending",
-                project_name: document.getElementById('project-name')?.textContent || '',
-                client_name: document.getElementById('client-name')?.textContent || '',
-                final_price: item.totalPrice,
-                quantity: item.quantity,
-                notes: item.notes || '',
-                order_id: document.getElementById('order-id')?.textContent || '',
-                date_created: new Date().toISOString()
-            };
+        // Reset form
+        function resetForm() {
+            document.getElementById('collection').value = '';
+            document.getElementById('item').value = '';
+            document.getElementById('item').disabled = true;
+            document.getElementById('price').value = '';
+            document.getElementById('quantity').value = '1';
+            document.getElementById('rush').value = 'no';
+            document.getElementById('notes').value = '';
+            document.getElementById('item-price').textContent = '$0.00';
             
-            const response = await fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(webhookData)
+            // Reset material selections
+            document.getElementById('fabric-brand').value = '';
+            document.getElementById('fabric-collection').value = '';
+            document.getElementById('fabric-collection').disabled = true;
+            document.getElementById('fabric-color').value = '';
+            document.getElementById('fabric-color').disabled = true;
+            
+            document.getElementById('wood-type').value = '';
+            document.getElementById('wood-finish').value = '';
+            
+            document.getElementById('metal-type').value = '';
+            document.getElementById('metal-finish').value = '';
+            
+            document.getElementById('stone-type').value = '';
+            document.getElementById('weave-material').value = '';
+            document.getElementById('carving-style').value = '';
+            document.getElementById('additional-specs').value = '';
+            
+            // Disable material tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (!tab.textContent.includes('Item Details')) {
+                    tab.disabled = true;
+                }
             });
             
-            if (!response.ok) {
-            throw new Error(`Webhook failed: ${response.status}`);
+            // Switch back to basic info
+            switchTab('basic-info');
+            
+            // Reset currentItem
+            currentItem = {};
         }
-    }
-    
-    alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
-    orderItems = [];
-    updateOrderItemsList();
-    resetForm();
-    
-} catch (error) {
-    console.error('Error submitting order:', error);
-    alert('Error submitting order. Please check console for details.');
-}
-}
 
+        // Submit order - UPDATED for correct Monday field structure
+        async function submitOrder() {
+            if (orderItems.length === 0) {
+                alert('Please add at least one item to the order');
+                return;
+            }
+            
+            if (!confirm(`Submit ${orderItems.length} items for production?`)) {
+                return;
+            }
+            
+            // Make.com webhook URL
+            const WEBHOOK_URL = 'https://hook.us2.make.com/ue47c6ub3xk6b2hrpfejncrccjuetxuh';
+            
+            try {
+                // Send each item to webhook
+                for (const item of orderItems) {
+                    // Prepare data matching Monday board columns exactly
+                    const webhookData = {
+                        // SKU identifiers (matching SKU Registry board)
+                        custom_sku: item.custom_sku,
+                        base_sku: item.base_sku,
+                        sku_id: item.sku_id,
+                        
+                        // Item details
+                        collection: item.collection,
+                        item_name: item.item,
+                        
+                        // Materials (matching board field names)
+                        fabric_brand: item.fabric.brand || "",
+                        fabric_collection: item.fabric.collection || "",
+                        fabric_color: item.fabric.color || "",
+                        wood_type: item.wood.type ? `${item.wood.type}${item.wood.finish ? ' ' + item.wood.finish : ''}` : "",
+                        metal_type: item.metal.type || "",
+                        stone_type: item.stone.type || "",
+                        carving_style: item.carving.style || "",
+                        weaving_material: item.weave.material || "",
+                        additional_specs: item.additionalSpecs || "",
+                        
+                        // Order details
+                        quantity: item.quantity,
+                        final_price: item.totalPrice,
+                        rush_order: item.rush ? "Yes" : "No",
+                        
+                        // Context
+                        client_name: document.getElementById('client-name').textContent,
+                        order_number: document.getElementById('order-id').textContent,
+                        project_id: document.getElementById('project-name').textContent,
+                        notes: item.notes || '',
+                        
+                        // Status
+                        production_status: "Working on it",
+                        
+                        // Timestamp
+                        date_created: new Date().toISOString()
+                    };
+                    
+                    console.log('Sending webhook:', webhookData);
+                    
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(webhookData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Webhook failed: ${response.status}`);
+                    }
+                }
+                
+                alert(`Order submitted successfully! ${orderItems.length} SKUs sent to production system.`);
+                orderItems = [];
+                updateOrderItemsList();
+                resetForm();
+                
+            } catch (error) {
+                console.error('Error submitting order:', error);
+                alert('Error submitting order. Please check console for details.');
+            }
+        }
         
         // Load stone options
         async function loadStoneOptions() {
